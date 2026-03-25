@@ -29,3 +29,15 @@ class OLS:
             self.X = X
         
         self._fitted = False
+
+    def _estimate_beta(self):
+        """
+        Resolve o problema de minimização para obter os coeficientes beta.
+        
+        beta_hat = (X'X)^(-1) X'Y.
+        """
+
+        XtX = self.X.T @ self.X                         # X'X (k, k)
+        XtY = self.X.T @ self.Y                         # X'Y (k, 1)
+        self.beta_hat = np.linalg.solve(XtX, XtY)       # beta_hat (k, 1)
+        self.XtX_inv = np.linalg.inv(XtX)               # (X'X)^(-1) para variância dos coeficientes
