@@ -46,6 +46,31 @@ class OLS:
         self.XtX_inv = np.linalg.inv(XtX)               # (X'X)^(-1) para variância dos coeficientes
 
     # -----------------------------------------------------
+    # 2. Resíduos e variância.
+    # -----------------------------------------------------
+    def _compute_residuals(self):
+        """
+        Calcula diretamente o y_hat e os resíduos Y - y_hat.
+        """
+
+        self.y_hat = self.X @ self.beta_hat             # Previsões (n, 1)
+        self.residuals = self.Y - self.y_hat            # Resíduos (n, 1)
+    
+    def _estimate_sigma2(self):
+        """
+        Estima a sigma^2 a partir da soma dos quadrados dos resíduos.
+        """
+
+        n, k = self.X.shape
+        SSR = self.residuals @ self.residuals
+        self.sigma2_hat = SSR / (n - k)                # Sigma^2 estimado (escalar)
+        self.SSR = SSR
+
+        self.n = n
+        self.k = k
+
+
+    # -----------------------------------------------------
     # FINAL - Fit do modelo - Interface pública.
     # -----------------------------------------------------
     def fit(self):
@@ -54,6 +79,8 @@ class OLS:
         """
 
         self._estimate_beta()
+        self._compute_residuals()
+        self._estimate_sigma2()
         self._fitted = True
         return self
     
@@ -65,9 +92,12 @@ class OLS:
         if not self._fitted:
             raise RuntimeError("Você precisa ajustar o modelo antes de chamar summary().")
 
+        n, k = self.n, self.k
         sep = "=" * 65
 
         print(sep)
         print(f"{'Resultados da regressão por OLS':^65}")
         print(sep)
+        print(f" Observações: {n:>10}               Parâmetros: {k:>10}")
         print(f"'_beta_hat':\n{self.beta_hat.flatten()}\n")
+        print(f"'_sigma2_hat':\n{self.sigma2_hat}\n")
