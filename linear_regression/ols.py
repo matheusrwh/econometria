@@ -64,11 +64,25 @@ class OLS:
         n, k = self.X.shape
         SSR = self.residuals @ self.residuals
         self.sigma2_hat = SSR / (n - k)                # Sigma^2 estimado (escalar)
-        self.SSR = SSR
+        self.SSR = SSR                                 # Soma dos quadrados dos resíduos (escalar)
 
         self.n = n
         self.k = k
 
+    # -----------------------------------------------------
+    # 3. Matriz de variância-covariância e inferência.
+    # -----------------------------------------------------
+    def _inference(self):
+        """
+        Calcula a matriz de variância-covariância dos coeficientes, estatísticas t e p-valores bicaudais.
+        """
+
+        n, k = self.X.shape
+        self.cov_beta = self.sigma2_hat * self.XtX_inv                   # Matriz de variância-covariância (k, k)
+        self.se = np.sqrt(np.diag(self.cov_beta))                        # Erros padrão dos coeficientes (k,)
+        self.t_stats = self.beta_hat / self.se                           # Estatísticas t (k, 1)
+
+        self.p_values = 2 * t_dist.sf(np.abs(self.t_stats), df = n - k)  # P-valores bicaudais (k, 1)
 
     # -----------------------------------------------------
     # FINAL - Fit do modelo - Interface pública.
@@ -81,6 +95,7 @@ class OLS:
         self._estimate_beta()
         self._compute_residuals()
         self._estimate_sigma2()
+        self._inference()
         self._fitted = True
         return self
     
@@ -99,5 +114,3 @@ class OLS:
         print(f"{'Resultados da regressão por OLS':^65}")
         print(sep)
         print(f" Observações: {n:>10}               Parâmetros: {k:>10}")
-        print(f"'_beta_hat':\n{self.beta_hat.flatten()}\n")
-        print(f"'_sigma2_hat':\n{self.sigma2_hat}\n")
