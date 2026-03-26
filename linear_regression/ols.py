@@ -135,10 +135,10 @@ class OLS:
         print(sep)
         print(f"{'OLS Regression Results':^65}")
         print(sep)
-        print(f"  Obs.:           {n:>10}    R²:            {self.r_squared:>10.4f}")
-        print(f"  Parâmetros (k): {k:>10}    R² ajustado:   {self.r_squared_adj:>10.4f}")
-        print(f"  sigma² hat:     {self.sigma2_hat:>10.4f}    F ({k-1}, {n-k}):      {self.f_stat:>10.4f}")
-        print(f"  {'':24}      p-value (F):   {self.f_pvalue:>10.4f}")
+        print(f"  Obs.:           {n:>10}       R²:            {self.r_squared:>10.4f}")
+        print(f"  Parâmetros (k): {k:>10}       R² ajustado:   {self.r_squared_adj:>10.4f}")
+        print(f"  sigma² hat:     {self.sigma2_hat:>10.4f}       F ({k-1}, {n-k}):      {self.f_stat:>10.4f}")
+        print(f"  {'':24}         p-value (F):   {self.f_pvalue:>10.4f}")
         print("-" * 65)
         print(f"  {'Coef.':<12} {'beta_hat':>10} {'std err':>10} {'t':>10} {'P>|t|':>10}")
         print("-" * 65)
@@ -152,3 +152,18 @@ class OLS:
         print(sep)
         print("  Nível de signif.: *** 1%  ** 5%  * 10%")
         print(sep)
+
+    def predict(self, X_new):
+        """
+        Gera previsões a partir do modelo ajustado.
+        """
+
+        if not self._fitted:
+            raise RuntimeError("Execute .fit() antes de chamar .predict().")
+        
+        X_new = np.asarray(X_new, dtype=float)
+        if X_new.ndim == 1:
+            X_new = X_new.reshape(1, -1)
+        if self.X.shape[1] > X_new.shape[1]:
+            X_new = np.hstack((np.ones((X_new.shape[0], 1)), X_new))
+        return X_new @ self.beta_hat
