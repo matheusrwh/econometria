@@ -1,6 +1,3 @@
-from tkinter.font import names
-
-from distro import name
 import numpy as np
 from scipy.stats import t as t_dist, f as f_dist
 
@@ -213,8 +210,10 @@ if __name__ == "__main__":
     import wooldridge
     wage = wooldridge.data('wage1')
 
+    wage.head()
+
     Y = wage['wage']
-    X = wage['educ']
+    X = wage[['educ', 'exper', 'tenure']]
 
     model = OLS(Y, X, add_constant=True)
     model = model.fit(robust = True)
