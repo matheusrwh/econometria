@@ -29,7 +29,10 @@ class OLS:
             self.X = X
         
         self._fitted = False
-
+    
+    # -----------------------------------------------------
+    # 1. Estima os coeficientes beta usando a fórmula de OLS.
+    # -----------------------------------------------------
     def _estimate_beta(self):
         """
         Resolve o problema de minimização para obter os coeficientes beta.
@@ -41,3 +44,30 @@ class OLS:
         XtY = self.X.T @ self.Y                         # X'Y (k, 1)
         self.beta_hat = np.linalg.solve(XtX, XtY)       # beta_hat (k, 1)
         self.XtX_inv = np.linalg.inv(XtX)               # (X'X)^(-1) para variância dos coeficientes
+
+    # -----------------------------------------------------
+    # FINAL - Fit do modelo - Interface pública.
+    # -----------------------------------------------------
+    def fit(self):
+        """
+        Executa todas as etapas de estimação.
+        """
+
+        self._estimate_beta()
+        self._fitted = True
+        return self
+    
+    def summary(self):
+        """
+        Imprime os resultados da regressão.
+        """
+
+        if not self._fitted:
+            raise RuntimeError("Você precisa ajustar o modelo antes de chamar summary().")
+
+        sep = "=" * 65
+
+        print(sep)
+        print(f"{'Resultados da regressão por OLS':^65}")
+        print(sep)
+        print(f"'_beta_hat':\n{self.beta_hat.flatten()}\n")
