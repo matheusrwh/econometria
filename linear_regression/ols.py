@@ -1,3 +1,6 @@
+from tkinter.font import names
+
+from distro import name
 import numpy as np
 from scipy.stats import t as t_dist, f as f_dist
 
@@ -82,7 +85,32 @@ class OLS:
         self.p_values = 2 * t_dist.sf(np.abs(self.t_stats), df = n - k)  # P-valores bicaudais (k, 1)
 
     # -----------------------------------------------------
-    # 4. Medidas de qualidade do ajuste e teste F.
+    # 4. Inferência de erros robustos à heterocedasticidade.
+    # -----------------------------------------------------
+    def _inference_robust(self):
+        """
+        Calcula a matriz de variância-covariância robusta de White com correção de graus de liberdade.
+        Esse comando é equivalente ao vce(robust) do Stata.
+
+        Cov_robust(beta_hat) = (X'X)^{-1} B_HC1 (X'X)^{-1}
+        onde B_HC1 = (n / (n-k)) * sum_i( e_i^2 * x_i x_i' )
+                   = (n / (n-k)) * X' diag(e^2) X
+        """
+
+        n, k = self.X.shape
+        e = self.residuals.flatten()
+
+        Xe = self.X * e[:, None]
+        meat = (n / (n - k)) * (Xe.T @ Xe)                               # Matriz "meat" de White (k, k)
+
+        self.cov_beta_robust = self.XtX_inv @ meat @ self.XtX_inv        # Matriz de variância-covariância robusta (k, k)
+        self.se_robust = np.sqrt(np.diag(self.cov_beta_robust))
+        self.t_stats_robust = self.beta_hat.flatten() / self.se_robust
+        self.p_values_robust = 2 * t_dist.sf(np.abs(self.t_stats_robust), df = n - k)
+
+
+    # -----------------------------------------------------
+    # 5. Medidas de qualidade do ajuste e teste F.
     # -----------------------------------------------------
     def _goodness_of_fit(self):
         """
@@ -111,7 +139,7 @@ class OLS:
     # -----------------------------------------------------
     # FINAL - Fit do modelo - Interface pública.
     # -----------------------------------------------------
-    def fit(self):
+    def fit(self, robust: bool = False):
         """
         Executa todas as etapas de estimação.
         """
@@ -120,8 +148,11 @@ class OLS:
         self._compute_residuals()
         self._estimate_sigma2()
         self._inference()
+        if robust:
+            self._inference_robust()
         self._goodness_of_fit()
         self._fitted = True
+        self._robust = robust
         return self
     
     def summary(self):
@@ -132,24 +163,31 @@ class OLS:
         n, k = self.n, self.k
         sep = "=" * 65
  
+        # Nomes dos coeficientes
+        names = (["const"] if k > 1 else []) + [f"x{j}" for j in range(1, k)]
+
+        # Seleciona os vetores corretos conforme o tipo de erro estimado
+        se_use = self.se_robust       if self._robust else self.se
+        t_use  = self.t_stats_robust  if self._robust else self.t_stats
+        p_use  = self.p_values_robust if self._robust else self.p_values
+        label  = "OLS, erros robustos"       if self._robust else "OLS"
+
         print(sep)
-        print(f"{'OLS Regression Results':^65}")
+        print(f"{'Resultados da regressão - ' + label:^65}")
         print(sep)
         print(f"  Obs.:           {n:>10}       R²:            {self.r_squared:>10.4f}")
         print(f"  Parâmetros (k): {k:>10}       R² ajustado:   {self.r_squared_adj:>10.4f}")
-        print(f"  sigma² hat:     {self.sigma2_hat:>10.4f}       F ({k-1}, {n-k}):      {self.f_stat:>10.4f}")
+        print(f"  Sigma² estimado:{self.sigma2_hat:>10.4f}       F ({k-1}, {n-k}):      {self.f_stat:>10.4f}")
         print(f"  {'':24}         p-value (F):   {self.f_pvalue:>10.4f}")
         print("-" * 65)
         print(f"  {'Coef.':<12} {'beta_hat':>10} {'std err':>10} {'t':>10} {'P>|t|':>10}")
         print("-" * 65)
- 
-        # Nomes dos coeficientes
-        names = (["const"] if k > 1 else []) + [f"x{j}" for j in range(1, k)]
-        for name, b, se, t, p in zip(names, self.beta_hat, self.se, self.t_stats, self.p_values):
+        for name, b, se, t, p in zip(names, self.beta_hat.flatten(), se_use, t_use, p_use):
             sig = "***" if p < 0.01 else ("**" if p < 0.05 else ("*" if p < 0.1 else ""))
             print(f"  {name:<12} {b:>10.4f} {se:>10.4f} {t:>10.4f} {p:>10.4f} {sig}")
- 
+
         print(sep)
+
         print("  Nível de signif.: *** 1%  ** 5%  * 10%")
         print(sep)
 
@@ -179,5 +217,5 @@ if __name__ == "__main__":
     X = wage['educ']
 
     model = OLS(Y, X, add_constant=True)
-    model = model.fit()
+    model = model.fit(robust = True)
     model.summary()
