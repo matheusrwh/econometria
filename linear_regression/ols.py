@@ -167,3 +167,17 @@ class OLS:
         if self.X.shape[1] > X_new.shape[1]:
             X_new = np.hstack((np.ones((X_new.shape[0], 1)), X_new))
         return X_new @ self.beta_hat
+
+# -----------------------------------------------------
+# Exemplo de uso.
+# -----------------------------------------------------
+if __name__ == "__main__":
+    import wooldridge
+    wage = wooldridge.data('wage1')
+
+    Y = wage['wage']
+    X = wage['educ']
+
+    model = OLS(Y, X, add_constant=True)
+    model = model.fit()
+    model.summary()
