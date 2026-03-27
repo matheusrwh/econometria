@@ -213,7 +213,7 @@ if __name__ == "__main__":
     wage.head()
 
     Y = wage['wage']
-    X = wage[['educ', 'exper', 'tenure']]
+    X = wage[['educ']]
 
     model = OLS(Y, X, add_constant=True)
     model = model.fit(robust = True)
