@@ -210,10 +210,8 @@ if __name__ == "__main__":
     import wooldridge
     wage = wooldridge.data('wage1')
 
-    wage.head()
-
     Y = wage['wage']
-    X = wage[['educ']]
+    X = wage[['exper']]
 
     model = OLS(Y, X, add_constant=True)
     model = model.fit(robust = True)
